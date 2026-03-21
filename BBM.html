@@ -71,23 +71,24 @@
         <div class = "MasterLayout">
 
             <input type="file" id="InputJson" accept=".json" class = "SmallText">
-			<button class = "NormalText" onclick = "SaveClick()">Save</button>
-            <div class = "NormalText" id = "OutputArea">...</div>
+			<button class = "SmallText" onclick = "SaveClick()">Save</button>
+            <div class = "SmallText" id = "OutputArea">...</div>
 
-            <button class = "NormalText" onclick = "ComputeClick()">Compute</button>
-			<button class = "NormalText" onclick = "InsertClick()">Insert</button>
+            <button class = "SmallText" onclick = "ComputeClick()">Compute</button>
+			<button class = "SmallText" onclick = "InsertClick()">Insert</button>
             <div class = "InputLayout">
-                <textarea class = "NormalText" id = "InputPrice"></textarea>
+                <textarea class = "SmallText" id = "InputPrice"></textarea>
                 <input type="datetime-local" class = "SmallText" id = "InputDate" >
             </div>
         </div>
 
         <script>
-
+            // VARIABILI DI STATO
             let State_Values = [];
             let State_Dates = [];
+            let State_Resamples = 100000;
 
-            // FUNZIONI PILOTA
+            // FUNZIONI PILOTA E GENERICHE
             document.getElementById( 'InputJson' ).addEventListener( 'change', 
                 ( ChangeEvent ) => 
                 {
@@ -109,9 +110,44 @@
                 ); 
             }
 
-            function ComputeClick(){ OutputFunction_Render(); }
+            function ComputeClick()
+            { 
+                OutputFunction_Render(
+                    document.getElementById( "InputPrice" ).value ,
+                    document.getElementById( "InputDate" ).value 
+                ); 
+            }
 
             function SaveClick(){ OutputFunction_Save(); }
+
+            function Mean( Data )
+            {
+                let Mean_ = 0;
+
+                for( let Cur = 0; Cur < Data.length; Cur ++ )
+                {
+                    Mean_ += Data[ Cur ];
+                }
+
+                Mean_ /= Data.length;
+
+                return Mean_;
+            }
+
+            function MAD( Data )
+            {
+                let Mean_ = Mean( Data );
+                let MAD_ = 0;
+
+                for( let Cur = 0; Cur < Data.length; Cur ++ )
+                {
+                    MAD_ += Math.abs( Mean_ - Data[ Cur ] );
+                }
+
+                MAD_ /= Data.length;
+
+                return MAD_;
+            }
 
             // FUNZIONI DI STATO
             function StateFunction_Load( InputJSON )
@@ -127,9 +163,43 @@
             }
 
             // FUNZIONI DI OUTPUT ( RENDER DELLA PAGINA )
-            function OutputFunction_Render()
+            function OutputFunction_Render( InputValue, InputDate )
             {
+                // stima probabilità che dato il valore di oggi nei restanti giorni di vendita il prezzo sia più basso
+                let Value = parseInt( InputValue );
+                let Date_ = new Date( InputDate );
 
+                if( Date_.getDay() == 0 )
+                {
+                    document.getElementById( "OutputArea" ).innerHTML = "Domenica non puoi valutare le rape!";
+                    return;
+                }
+
+                let ActualAttempts = ( Date_.getDay() - 1 ) * 2; // convenzione anglosassone domenica giorno 0
+                if( Date_.getHours() >= 12 ){ ActualAttempts += 1; }
+
+                let RemainingAttempts = 11 - ActualAttempts;
+
+                let TodayBestVector = [];
+
+                for( let CurResample = 0; CurResample < State_Resamples; CurResample ++ )
+                {
+                    let TodayBest = 100;
+                    for( let CurTest = 0; CurTest < RemainingAttempts; CurTest ++ )
+                    {
+                        if( State_Values[ Math.floor( Math.random() * State_Values.length ) ] > Value )
+                        {
+                            TodayBest = 0;
+                            break;
+                        }
+                    }
+                    TodayBestVector.push( TodayBest );
+                }
+
+                let MeanTodayBestVector = Mean( TodayBestVector );
+                let MADTodayBestVector = MAD ( TodayBestVector );
+                
+                document.getElementById( "OutputArea" ).innerHTML = MeanTodayBestVector.toFixed( 1 ) + ' \u00B1 ' + MADTodayBestVector.toFixed( 1 ) + '[ % ]';
             }
 
             function OutputFunction_Save()
