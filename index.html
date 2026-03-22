@@ -27,24 +27,44 @@
                 display: grid;
                 align-items: center;
                 justify-content: center;
-                grid-template-columns: 33.33% 33.33% 33.33%;
+                grid-template-columns: 100%;
                 grid-template-rows: 50% 50%;
                 box-sizing: border-box;
                 height: 75%;
                 width: 75%;
             }
 
-            .InputLayout
+            .LowerLayout
             {
                 display: grid;
-                grid-template-columns: 100%;
+                grid-template-columns: 50% 50%;
+                grid-template-rows: 100%;
+                box-sizing: border-box;
+                height: 100%;
+                width: 100%;
+            }
+
+            .ButtonsLayout
+            {
+                display: grid;
+                grid-template-columns: 50% 50%;
                 grid-template-rows: 50% 50%;
                 box-sizing: border-box;
                 height: 100%;
                 width: 100%;
             }
 
-            .InputDateHourLayout
+            .DateTimeValueLayout
+            {
+                display: grid;
+                grid-template-columns: 100%;
+                grid-template-rows: 50% 50%;
+                box-sizing: border-box;
+                height: 100%;
+                width: 100%;  
+            }
+
+            .TimeValueLayout
             {
                 display: grid;
                 grid-template-columns: 50% 50%;
@@ -85,22 +105,27 @@
 
         <div class = "MasterLayout">
 
-            <input type="file" id="InputJson" accept=".json" class = "SmallText">
-			<button class = "SmallText" onclick = "SaveClick()">Save</button>
             <div class = "SmallText" id = "OutputArea">:-()</div>
 
-            <button class = "SmallText" onclick = "ComputeClick()">Compute</button>
-			<button class = "SmallText" onclick = "InsertClick()">Insert</button>
-            <div class = "InputLayout">
-                <textarea class = "SmallText" id = "InputPrice"></textarea>
-                <div class = "InputDateHourLayout">
+            <div class = "LowerLayout">
+                <div class = "ButtonsLayout">
+                    <input type="file" id="InputJson" accept=".json" class = "SmallText">
+                    <button class = "SmallText" onclick = "InsertClick()">Insert</button>
+                    <button class = "SmallText" onclick = "SaveClick()">Save</button>
+                    <button class = "SmallText" onclick = "ComputeClick()">Compute</button>
+                </div>
+
+                <div class = "DateTimeValueLayout">
                     <input type = "date" class = "SmallText" id = "InputDate">
-                    <select id = "InputTime" class = "SmallText">
-                        <option value="Morning">Morning</option><option value="Afternoon">Afternoon</option>
-                    </select>
+
+                    <div class = "TimeValueLayout">
+                        <select id = "InputTime" class = "SmallText">
+                            <option value="Morning">Morning</option><option value="Afternoon">Afternoon</option>
+                        </select>
+                        <textarea class = "SmallText" id = "InputPrice"></textarea>
+                    </div>
                 </div>
             </div>
-        </div>
 
         <script>
             // VARIABILI DI STATO
