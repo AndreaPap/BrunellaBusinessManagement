@@ -105,7 +105,12 @@
                 StateFunction_Add( 
                     document.getElementById( "InputPrice" ).value ,
                     document.getElementById( "InputDate" ).value 
-                ); 
+                );
+		
+		OutputFunction_Add(
+                    document.getElementById( "InputPrice" ).value ,
+                    document.getElementById( "InputDate" ).value
+		); 
             }
 
             function ComputeClick()
@@ -161,7 +166,7 @@
             }
 
             // FUNZIONI DI OUTPUT ( RENDER DELLA PAGINA )
-            function OutputFunction_Render( InputValue, InputDate )
+	    function OutputFunction_Render( InputValue, InputDate )
             {
                 // stima probabilità che dato il valore di oggi nei restanti giorni di vendita il prezzo sia più basso
                 let Value = parseInt( InputValue );
@@ -210,7 +215,7 @@
 	                document.getElementById( "OutputArea" ).innerHTML = 'Probability that this is the best price: ' +
 				+  MeanTodayBestVector.toFixed( 1 ) + ' \u00B1 ' + MADTodayBestVector.toFixed( 1 ) + '[ % ]';
         	}    
-	}
+	    }
 
             function OutputFunction_Save()
             {
@@ -226,6 +231,22 @@
                 Download.click();
                 URL.revokeObjectURL( Url );
             }
+
+	    function OutputFunction_Add( InputValue, InputDate )
+	    { 
+                let Value = parseInt( InputValue );
+                let Date_ = new Date( InputDate );
+		
+		if( Date_.getDay() == 0 )
+		{	
+	                document.getElementById( "OutputArea" ).innerHTML = 'Sunday can\'t be part of selling data :-(';
+		}
+		else
+		{	
+	                document.getElementById( "OutputArea" ).innerHTML = 'Added data, remember to download updated file :-)';
+		}
+            }
+
         </script>
 
     </body>
