@@ -16,15 +16,22 @@
                 margin: 0;
                 height: 100%;
             }
+            
+            body {
+                display: grid;
+                place-items: center; 
+            }
 
             .MasterLayout
             {
                 display: grid;
+                align-items: center;
+                justify-content: center;
                 grid-template-columns: 33.33% 33.33% 33.33%;
                 grid-template-rows: 50% 50%;
                 box-sizing: border-box;
-                height: 100%;
-                width: 100%;
+                height: 75%;
+                width: 75%;
             }
 
             .InputLayout
@@ -35,6 +42,16 @@
                 box-sizing: border-box;
                 height: 100%;
                 width: 100%;
+            }
+
+            .InputDateHourLayout
+            {
+                display: grid;
+                grid-template-columns: 50% 50%;
+                grid-template-rows: 100%;
+                box-sizing: border-box;
+                height: 100%;
+                width: 100%;  
             }
 
             .NormalText 
@@ -70,13 +87,18 @@
 
             <input type="file" id="InputJson" accept=".json" class = "SmallText">
 			<button class = "SmallText" onclick = "SaveClick()">Save</button>
-            <div class = "SmallText" id = "OutputArea"></div>
+            <div class = "SmallText" id = "OutputArea">:-()</div>
 
             <button class = "SmallText" onclick = "ComputeClick()">Compute</button>
 			<button class = "SmallText" onclick = "InsertClick()">Insert</button>
             <div class = "InputLayout">
                 <textarea class = "SmallText" id = "InputPrice"></textarea>
-                <input type="datetime-local" class = "SmallText" id = "InputDate" >
+                <div class = "InputDateHourLayout">
+                    <input type = "date" class = "SmallText" id = "InputDate">
+                    <select id = "InputTime" class = "SmallText">
+                        <option value="Morning">Morning</option><option value="Afternoon">Afternoon</option>
+                    </select>
+                </div>
             </div>
         </div>
 
@@ -84,9 +106,22 @@
             // VARIABILI DI STATO
             let State_Values = [];
             let State_Dates = [];
+            let State_Times = [];
             let State_Resamples = 1000000;
 
             // FUNZIONI PILOTA E GENERICHE
+            function ValidateValueDate( InputValue, InputDate, InputTime )
+            {
+                let TestValue = parseInt( InputValue );
+                let TestDate = new Date( InputDate );
+
+                if( !Number.isNaN( TestValue ) && !Number.isNaN( TestDate.getTime() ) && !( InputTime !== 'Morning' && InputTime !=='Afternoon' ) )
+                {
+                    return true;
+                }
+                else{ return false; }
+            }
+
             document.getElementById( 'InputJson' ).addEventListener( 'change', 
                 ( ChangeEvent ) => 
                 {
@@ -103,21 +138,24 @@
             function InsertClick()
             { 
                 StateFunction_Add( 
-                    document.getElementById( "InputPrice" ).value ,
-                    document.getElementById( "InputDate" ).value 
+                    document.getElementById( "InputPrice" ).value,
+                    document.getElementById( "InputDate" ).value,
+                    document.getElementById( "InputTime" ).value 
                 );
 		
-		OutputFunction_Add(
-                    document.getElementById( "InputPrice" ).value ,
-                    document.getElementById( "InputDate" ).value
-		); 
+		        OutputFunction_Add(
+                    document.getElementById( "InputPrice" ).value,
+                    document.getElementById( "InputDate" ).value,
+                    document.getElementById( "InputTime" ).value 
+		        ); 
             }
 
             function ComputeClick()
             { 
                 OutputFunction_Render(
-                    document.getElementById( "InputPrice" ).value ,
-                    document.getElementById( "InputDate" ).value 
+                    document.getElementById( "InputPrice" ).value,
+                    document.getElementById( "InputDate" ).value,
+                    document.getElementById( "InputTime" ).value  
                 ); 
             }
 
@@ -157,70 +195,87 @@
             {
                 State_Values = InputJSON[ "Values" ];
                 State_Dates = InputJSON[ "Dates" ];
+                State_Times = InputJSON[ "Times" ];
             }
 
-            function StateFunction_Add( InputValue, InputDate )
+            function StateFunction_Add( InputValue, InputDate, InputTime )
             {
-                State_Values.push( parseInt( InputValue ) );
-                State_Dates.push( InputDate );
+                if( ValidateValueDate( InputValue, InputDate, InputTime ) )
+                {
+                    State_Values.push( parseInt( InputValue ) );
+                    State_Dates.push( InputDate );
+                    State_Times.push( InputTime );
+                }
             }
 
             // FUNZIONI DI OUTPUT ( RENDER DELLA PAGINA )
-	    function OutputFunction_Render( InputValue, InputDate )
+	        function OutputFunction_Render( InputValue, InputDate, InputTime )
             {
-                // stima probabilità che dato il valore di oggi nei restanti giorni di vendita il prezzo sia più basso
-                let Value = parseInt( InputValue );
-                let Date_ = new Date( InputDate );
-
-		let RemainingAttempts = 0;
-		
-                if( Date_.getDay() == 0 )
+                if( ValidateValueDate( InputValue, InputDate, InputTime ) )
                 {
-			RemainingAttempts = 12;
-                }
-		else
-		{
-                	let ActualAttempts = ( Date_.getDay() - 1 ) * 2; // convenzione anglosassone domenica giorno 0
-                	if( Date_.getHours() >= 12 ){ ActualAttempts += 1; }
+                    // stima probabilità che dato il valore di oggi nei restanti giorni di vendita il prezzo sia più basso
+                    let Value = parseInt( InputValue );
+                    let Date_ = new Date( InputDate );
 
-                	RemainingAttempts = 11 - ActualAttempts;
-		}
-
-                let TodayBestVector = [];
-
-                for( let CurResample = 0; CurResample < State_Resamples; CurResample ++ )
-                {
-                    let TodayBest = 100;
-                    for( let CurTest = 0; CurTest < RemainingAttempts; CurTest ++ )
+                    let RemainingAttempts = 0;
+            
+                    if( Date_.getDay() == 0 )
                     {
-                        if( State_Values[ Math.floor( Math.random() * State_Values.length ) ] > Value )
-                        {
-                            TodayBest = 0;
-                            break;
-                        }
+                        RemainingAttempts = 12;
                     }
-                    TodayBestVector.push( TodayBest );
-                }
+                    else
+                    {
+                        let ActualAttempts = ( Date_.getDay() - 1 ) * 2; // convenzione anglosassone domenica giorno 0
+                        if( InputTime === 'Afternoon' ){ ActualAttempts += 1; }
 
-                let MeanTodayBestVector = Mean( TodayBestVector );
-                let MADTodayBestVector = MAD ( TodayBestVector );
-                
-		if( RemainingAttempts == 12 )
-		{
-	                document.getElementById( "OutputArea" ).innerHTML = 'Probability of not selling at a better price: ' +
-				 MeanTodayBestVector.toFixed( 1 ) + ' \u00B1 ' + MADTodayBestVector.toFixed( 1 ) + '[ % ]';
-		}
-		else
-		{
-	                document.getElementById( "OutputArea" ).innerHTML = 'Probability that this is the best price: ' +
-				+  MeanTodayBestVector.toFixed( 1 ) + ' \u00B1 ' + MADTodayBestVector.toFixed( 1 ) + '[ % ]';
-        	}    
-	    }
+                        RemainingAttempts = 11 - ActualAttempts;
+                    }
+
+                    let TodayBestVector = [];
+
+                    for( let CurResample = 0; CurResample < State_Resamples; CurResample ++ )
+                    {
+                        let TodayBest = 100;
+                        for( let CurTest = 0; CurTest < RemainingAttempts; CurTest ++ )
+                        {
+                            if( State_Values[ Math.floor( Math.random() * State_Values.length ) ] > Value )
+                            {
+                                TodayBest = 0;
+                                break;
+                            }
+                        }
+                        TodayBestVector.push( TodayBest );
+                    }
+
+                    let MeanTodayBestVector = Mean( TodayBestVector );
+                    let MADTodayBestVector = MAD ( TodayBestVector );
+                    
+                    if( RemainingAttempts == 12 )
+                    {
+                                document.getElementById( "OutputArea" ).innerHTML = 'Probability of not selling at a better price: ' +
+                            MeanTodayBestVector.toFixed( 1 ) + ' \u00B1 ' + MADTodayBestVector.toFixed( 1 ) + '[ % ]';
+                    }
+                    else
+                    {
+                                document.getElementById( "OutputArea" ).innerHTML = 'Probability that this is the best price: ' +
+                            +  MeanTodayBestVector.toFixed( 1 ) + ' \u00B1 ' + MADTodayBestVector.toFixed( 1 ) + '[ % ]';
+                    }
+                }
+                else
+                {
+                    OutputFunction_ErrorValueDate();
+                }    
+            }
+
+            function OutputFunction_ErrorValueDate()
+            {
+                document.getElementById( "OutputArea" ).innerHTML = 'Invalid value or date :-(';
+            }
 
             function OutputFunction_Save()
             {
                 let BlobJSON = new Blob( 
-                    [ JSON.stringify( { "Values" : State_Values, "Dates" : State_Dates } ) ],
+                    [ JSON.stringify( { "Values" : State_Values, "Dates" : State_Dates, "Times" : State_Times } ) ],
                      { type: "application/json" }
                     );
 
@@ -232,20 +287,27 @@
                 URL.revokeObjectURL( Url );
             }
 
-	    function OutputFunction_Add( InputValue, InputDate )
+	    function OutputFunction_Add( InputValue, InputDate, InputTime )
 	    { 
+            if( ValidateValueDate( InputValue, InputDate, InputTime ) )
+            {
                 let Value = parseInt( InputValue );
                 let Date_ = new Date( InputDate );
-		
-		if( Date_.getDay() == 0 )
-		{	
-	                document.getElementById( "OutputArea" ).innerHTML = 'Sunday can\'t be part of selling data :-(';
-		}
-		else
-		{	
-	                document.getElementById( "OutputArea" ).innerHTML = 'Added data, remember to download updated file :-)';
-		}
+            
+                if( Date_.getDay() == 0 )
+                {	
+                            document.getElementById( "OutputArea" ).innerHTML = 'Sunday can\'t be part of selling data :-(';
+                }
+                else
+                {	
+                            document.getElementById( "OutputArea" ).innerHTML = 'Added data, remember to download updated file :-)';
+                }
             }
+            else
+            {
+                OutputFunction_ErrorValueDate();
+            }
+        }
 
         </script>
 
