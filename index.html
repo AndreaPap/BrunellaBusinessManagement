@@ -105,7 +105,7 @@
 
         <div class = "MasterLayout">
 
-            <div class = "SmallText" id = "OutputArea">:-()</div>
+            <div class = "SmallText" id = "OutputArea"></div>
 
             <div class = "LowerLayout">
                 <div class = "ButtonsLayout">
@@ -129,12 +129,15 @@
 
         <script>
             // VARIABILI DI STATO
-            let State_Values = [];
-            let State_Dates = [];
-            let State_Times = [];
-            let State_Resamples = 1000000;
+            let State_BrunellaLoaded;
+            let State_Values;
+            let State_Dates;
+            let State_Times;
+            let State_Resamples;
 
             // FUNZIONI PILOTA E GENERICHE
+            StateFunction_Init();
+
             function ValidateValueDate( InputValue, InputDate, InputTime )
             {
                 let TestValue = parseInt( InputValue );
@@ -154,6 +157,7 @@
                     Reader.onload = ( EndLoadEvent ) =>
                     {
                         StateFunction_Load( JSON.parse( Reader.result ) );
+                        OutputFunction_Load();
                     }
 
                     Reader.readAsText( ChangeEvent.target.files[0] ); // parte la lettura che triggera la callback onload
@@ -162,13 +166,18 @@
 
             function InsertClick()
             { 
-                StateFunction_Add( 
+
+                let PopupResult = OutputFunction_PopupConfirmInsert();
+
+                StateFunction_Insert( 
+                    PopupResult,
                     document.getElementById( "InputPrice" ).value,
                     document.getElementById( "InputDate" ).value,
                     document.getElementById( "InputTime" ).value 
                 );
 		
-		        OutputFunction_Add(
+		        OutputFunction_Insert(
+                    PopupResult,
                     document.getElementById( "InputPrice" ).value,
                     document.getElementById( "InputDate" ).value,
                     document.getElementById( "InputTime" ).value 
@@ -216,16 +225,45 @@
             }
 
             // FUNZIONI DI STATO
-            function StateFunction_Load( InputJSON )
+            function StateFunction_Init()
             {
-                State_Values = InputJSON[ "Values" ];
-                State_Dates = InputJSON[ "Dates" ];
-                State_Times = InputJSON[ "Times" ];
+                State_BrunellaLoaded = false;
+                State_Values = [];
+                State_Dates = [];
+                State_Times = [];
+                State_Resamples = 1000000;
             }
 
-            function StateFunction_Add( InputValue, InputDate, InputTime )
+            function StateFunction_Load( InputJSON )
             {
-                if( ValidateValueDate( InputValue, InputDate, InputTime ) )
+                if( InputJSON[ "Values" ] && InputJSON[ "Dates" ] && InputJSON[ "Times" ] )
+                {
+                    State_Values = InputJSON[ "Values" ];
+                    State_Dates = InputJSON[ "Dates" ];
+                    State_Times = InputJSON[ "Times" ];
+                    if( State_Values != [] && State_Dates != [] && State_Times != [] &&
+                        ( State_Values.length == State_Dates.length && State_Values.length == State_Times.length )
+                    )
+                    {
+                        State_BrunellaLoaded = true;
+                    }
+                    else
+                    {
+                        State_Values = [];
+                        State_Dates = [];
+                        State_Times = [];
+                        State_BrunellaLoaded = false;
+                    }
+                }
+                else
+                {
+                    State_BrunellaLoaded = false;
+                }
+            }
+
+            function StateFunction_Insert( PopupResult, InputValue, InputDate, InputTime )
+            {
+                if( State_BrunellaLoaded && PopupResult && ValidateValueDate( InputValue, InputDate, InputTime ) )
                 {
                     State_Values.push( parseInt( InputValue ) );
                     State_Dates.push( InputDate );
@@ -234,103 +272,143 @@
             }
 
             // FUNZIONI DI OUTPUT ( RENDER DELLA PAGINA )
+            function OutputFunction_NoBrunella()
+            {
+                alert( 'Please upload Brunella.json :-()');
+            }
+
+            function OutputFunction_PopupConfirmInsert()
+            {
+                if( State_BrunellaLoaded )
+                {
+                    let Index = State_Dates.length - 1;
+                    return confirm( 'Insert the value?\nLast inserted value: ' + parseInt( State_Values[ Index ] ) + ' @ ' + State_Dates[ Index ] + ' ' + State_Times[ Index ] );
+                }
+                else{ OutputFunction_NoBrunella(); }
+            }
+
 	        function OutputFunction_Render( InputValue, InputDate, InputTime )
+            {
+                if( State_BrunellaLoaded )
+                {
+                    if( ValidateValueDate( InputValue, InputDate, InputTime ) )
+                    {
+                        // stima probabilità che dato il valore di oggi nei restanti giorni di vendita il prezzo sia più basso
+                        let Value = parseInt( InputValue );
+                        let Date_ = new Date( InputDate );
+
+                        let RemainingAttempts = 0;
+                
+                        if( Date_.getDay() == 0 )
+                        {
+                            RemainingAttempts = 12;
+                        }
+                        else
+                        {
+                            let ActualAttempts = ( Date_.getDay() - 1 ) * 2; // convenzione anglosassone domenica giorno 0
+                            if( InputTime === 'Afternoon' ){ ActualAttempts += 1; }
+
+                            RemainingAttempts = 11 - ActualAttempts;
+                        }
+
+                        let TodayBestVector = [];
+
+                        for( let CurResample = 0; CurResample < State_Resamples; CurResample ++ )
+                        {
+                            let TodayBest = 100;
+                            for( let CurTest = 0; CurTest < RemainingAttempts; CurTest ++ )
+                            {
+                                if( State_Values[ Math.floor( Math.random() * State_Values.length ) ] > Value )
+                                {
+                                    TodayBest = 0;
+                                    break;
+                                }
+                            }
+                            TodayBestVector.push( TodayBest );
+                        }
+
+                        let MeanTodayBestVector = Mean( TodayBestVector );
+                        let MADTodayBestVector = MAD ( TodayBestVector );
+                        
+                        if( RemainingAttempts == 12 )
+                        {
+                                    document.getElementById( "OutputArea" ).innerHTML = 'Probability of not selling at a better price: ' +
+                                MeanTodayBestVector.toFixed( 1 ) + ' \u00B1 ' + MADTodayBestVector.toFixed( 1 ) + '[ % ]';
+                        }
+                        else
+                        {
+                                    document.getElementById( "OutputArea" ).innerHTML = 'Probability that this is the best price: ' +
+                                +  MeanTodayBestVector.toFixed( 1 ) + ' \u00B1 ' + MADTodayBestVector.toFixed( 1 ) + '[ % ]';
+                        }
+                    }
+                    else
+                    {
+                        OutputFunction_ErrorValueDate();
+                    } 
+                }
+                else{ OutputFunction_NoBrunella(); }   
+            }
+
+            function OutputFunction_ErrorValueDate()
+            {
+                alert( 'Invalid value or date :-(' );
+                //document.getElementById( "OutputArea" ).innerHTML = 'Invalid value or date :-(';
+            }
+
+            function OutputFunction_Save()
+            {
+                if( State_BrunellaLoaded )
+                {
+                    let BlobJSON = new Blob( 
+                        [ JSON.stringify( { "Values" : State_Values, "Dates" : State_Dates, "Times" : State_Times } ) ],
+                        { type: "application/json" }
+                        );
+
+                    let Download = document.createElement( 'a' ); // inserisce tag a che è per collegamenti ipertestuali
+                    let Url = URL.createObjectURL( BlobJSON );
+                    Download.href = Url;
+                    Download.download = "Brunella.json";
+                    Download.click();
+                    URL.revokeObjectURL( Url );
+                }
+                else
+                {
+                    OutputFunction_NoBrunella();
+                }
+            }
+
+        function OutputFunction_Load()
+        {
+            if( !State_BrunellaLoaded )
+            {
+                alert( 'Bad JSON file :-(' );
+            }
+        }
+
+	    function OutputFunction_Insert( PopupResult, InputValue, InputDate, InputTime )
+	    { 
+            if( PopupResult )
             {
                 if( ValidateValueDate( InputValue, InputDate, InputTime ) )
                 {
-                    // stima probabilità che dato il valore di oggi nei restanti giorni di vendita il prezzo sia più basso
                     let Value = parseInt( InputValue );
                     let Date_ = new Date( InputDate );
-
-                    let RemainingAttempts = 0;
-            
+                
                     if( Date_.getDay() == 0 )
-                    {
-                        RemainingAttempts = 12;
+                    {	
+                        //document.getElementById( "OutputArea" ).innerHTML = 'Sunday can\'t be part of selling data :-(';
+                        alert( 'Sunday can\'t be part of selling data :-(' );
                     }
                     else
-                    {
-                        let ActualAttempts = ( Date_.getDay() - 1 ) * 2; // convenzione anglosassone domenica giorno 0
-                        if( InputTime === 'Afternoon' ){ ActualAttempts += 1; }
-
-                        RemainingAttempts = 11 - ActualAttempts;
-                    }
-
-                    let TodayBestVector = [];
-
-                    for( let CurResample = 0; CurResample < State_Resamples; CurResample ++ )
-                    {
-                        let TodayBest = 100;
-                        for( let CurTest = 0; CurTest < RemainingAttempts; CurTest ++ )
-                        {
-                            if( State_Values[ Math.floor( Math.random() * State_Values.length ) ] > Value )
-                            {
-                                TodayBest = 0;
-                                break;
-                            }
-                        }
-                        TodayBestVector.push( TodayBest );
-                    }
-
-                    let MeanTodayBestVector = Mean( TodayBestVector );
-                    let MADTodayBestVector = MAD ( TodayBestVector );
-                    
-                    if( RemainingAttempts == 12 )
-                    {
-                                document.getElementById( "OutputArea" ).innerHTML = 'Probability of not selling at a better price: ' +
-                            MeanTodayBestVector.toFixed( 1 ) + ' \u00B1 ' + MADTodayBestVector.toFixed( 1 ) + '[ % ]';
-                    }
-                    else
-                    {
-                                document.getElementById( "OutputArea" ).innerHTML = 'Probability that this is the best price: ' +
-                            +  MeanTodayBestVector.toFixed( 1 ) + ' \u00B1 ' + MADTodayBestVector.toFixed( 1 ) + '[ % ]';
+                    {	
+                        //document.getElementById( "OutputArea" ).innerHTML = 'Inserted data, remember to download updated file :-)';
+                        alert( 'Inserted new data, remember to save updated file :-)' );
                     }
                 }
                 else
                 {
                     OutputFunction_ErrorValueDate();
-                }    
-            }
-
-            function OutputFunction_ErrorValueDate()
-            {
-                document.getElementById( "OutputArea" ).innerHTML = 'Invalid value or date :-(';
-            }
-
-            function OutputFunction_Save()
-            {
-                let BlobJSON = new Blob( 
-                    [ JSON.stringify( { "Values" : State_Values, "Dates" : State_Dates, "Times" : State_Times } ) ],
-                     { type: "application/json" }
-                    );
-
-                let Download = document.createElement( 'a' ); // inserisce tag a che è per collegamenti ipertestuali
-                let Url = URL.createObjectURL( BlobJSON );
-                Download.href = Url;
-                Download.download = "Brunella.json";
-                Download.click();
-                URL.revokeObjectURL( Url );
-            }
-
-	    function OutputFunction_Add( InputValue, InputDate, InputTime )
-	    { 
-            if( ValidateValueDate( InputValue, InputDate, InputTime ) )
-            {
-                let Value = parseInt( InputValue );
-                let Date_ = new Date( InputDate );
-            
-                if( Date_.getDay() == 0 )
-                {	
-                            document.getElementById( "OutputArea" ).innerHTML = 'Sunday can\'t be part of selling data :-(';
                 }
-                else
-                {	
-                            document.getElementById( "OutputArea" ).innerHTML = 'Added data, remember to download updated file :-)';
-                }
-            }
-            else
-            {
-                OutputFunction_ErrorValueDate();
             }
         }
 
