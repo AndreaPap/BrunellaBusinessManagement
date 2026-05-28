@@ -14,27 +14,18 @@
 
         <div class = "MasterLayout">
 
-            <div class = "Text" id = "OutputArea"></div>
+            <div class = "OutputLayout" id = "OutputArea"></div>
 
-            <div class = "LowerLayout">
-                <div class = "ButtonsLayout">
-                    <input type="file" id="InputJson" accept=".json" class = "Text">
-                    <button class = "Text" onclick = "InsertClick()">Insert</button>
-                    <button class = "Text" onclick = "SaveClick()">Save</button>
-                    <button class = "Text" onclick = "ComputeClick()">Compute</button>
-                </div>
+            <input type="file" id="InputJson" accept=".json" class = "SingleLayout">
+            <button class = "SingleLayout" onclick = "InsertClick()">Insert</button>
+            <input type = "date" class = "DateTimeValueLayout" id = "InputDate">
 
-                <div class = "DateTimeValueLayout">
-                    <input type = "date" class = "Text" id = "InputDate">
-
-                    <div class = "TimeValueLayout">
-                        <select id = "InputTime" class = "Text">
-                            <option value="Morning">Morning</option><option value="Afternoon">Afternoon</option>
-                        </select>
-                        <textarea class = "Text" id = "InputPrice"></textarea>
-                    </div>
-                </div>
-            </div>
+            <button class = "SingleLayout" onclick = "SaveClick()">Save</button>
+            <button class = "SingleLayout" onclick = "ComputeClick()">Compute</button>
+            <select id = "InputTime" class = "SingleLayout">
+                <option value="Morning">Morning</option><option value="Afternoon">Afternoon</option>
+            </select>
+            <textarea class = "SingleLayout" id = "InputPrice"></textarea>
         </div>
 
         <script src="code.js"></script>

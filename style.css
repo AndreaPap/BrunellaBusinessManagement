@@ -13,30 +13,37 @@ body {
 {
     display: grid;
     place-items: center;
-    grid-template-columns: 100%;
-    grid-template-rows: 50% 50%;    
+    grid-template-columns: 25% 25% 25% 25%;
+    grid-template-rows: 50% 25% 25%;    
     box-sizing: border-box;
-    height: 90%;
-    width: 90%;
+    height: 75%;
+    width: 75%;
 }
 
-.LowerLayout
+.OutputLayout
 {
     display: grid;
+    grid-column: span 4;
     place-items: center;
-    grid-template-columns: 50% 50%;
-    grid-template-rows: 100%;    
+    box-sizing: border-box;
+    border: 3px solid #ccc;
+    font-family: monospace;
+    font-weight: normal;
+    font-size: 3cqmin; 
     box-sizing: border-box;
     height: 100%;
     width: 100%;
 }
 
-.ButtonsLayout
+.SingleLayout
 {
     display: grid;
     place-items: center;
-    grid-template-columns: 50% 50%;
-    grid-template-rows: 50% 50%;    
+    box-sizing: border-box;
+    border: 3px solid #ccc;
+    font-family: monospace;
+    font-weight: normal;
+    font-size: 3cqmin; 
     box-sizing: border-box;
     height: 100%;
     width: 100%;
@@ -45,35 +52,16 @@ body {
 .DateTimeValueLayout
 {
     display: grid;
-    place-items: center;
-    grid-template-columns: 100%;
-    grid-template-rows: 50% 50%;    
-    box-sizing: border-box;
-    height: 100%;
-    width: 100%; 
-}
-
-.TimeValueLayout
-{
-    display: grid;
-    place-items: center;
-    grid-template-columns: 50% 50%;
-    grid-template-rows: 100%;    
-    box-sizing: border-box;
-    height: 100%;
-    width: 100%;
-}
-
-.Text 
-{
-    display: grid;
-    width: 100%;
-    height: 100%;
+    grid-column: span 2;
     place-items: center;
     box-sizing: border-box;
     border: 3px solid #ccc;
     font-family: monospace;
     font-weight: normal;
-    font-size: 3cqmin;                     
+    font-size: 3cqmin; 
+    box-sizing: border-box;
+    height: 100%;
+    width: 100%;
 }
+
 

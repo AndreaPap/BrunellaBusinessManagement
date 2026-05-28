@@ -134,6 +134,8 @@
                 ( State_Values.length == State_Dates.length && State_Values.length == State_Times.length )
             )
             {
+                document.getElementById( 'InputJson' ).style.backgroundColor = "palegreen";
+                document.getElementById( 'InputJson' ).style.color = "firebrick";
                 State_BrunellaLoaded = true;
             }
             else
